@@ -11,7 +11,7 @@
     <AppSidebar :is-open="isSidebarOpen" @close="isSidebarOpen = false" />
 
     <!-- Main Content -->
-    <main :class="{ 'has-sidebar-btn': !isParticipantView }">
+    <main :class="{ 'has-sidebar-btn': !noPaddingTop }">
       <router-view></router-view>
     </main>
   </div>
@@ -28,6 +28,11 @@ const route = useRoute()
 // Hide sidebar button on participant view to avoid distraction
 const isParticipantView = computed(() => {
   return ['Participant', 'Join'].includes(route.name)
+})
+
+const noPaddingTop = computed(() => {
+  // Host, Home, and Question pages manage their own spacing/centering
+  return ['Participant', 'Join', 'Home', 'Host', 'Question'].includes(route.name)
 })
 </script>
 

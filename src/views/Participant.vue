@@ -1,5 +1,5 @@
 <template>
-  <div class="container mt-4">
+  <div class="container participant-page">
     <div class="header-section fade-in">
       <div>
         <p class="room-label">正在參與房間</p>
@@ -11,7 +11,7 @@
       </div>
     </div>
 
-    <div class="main-content fade-in mt-4">
+    <div class="main-content fade-in mt-3">
       <!-- 等待中 -->
       <div v-if="status === 'waiting'" class="card text-center">
         <div class="waiting-animation">
@@ -23,13 +23,13 @@
       
       <!-- 收集答案中 -->
       <div v-else-if="status === 'collecting'" class="card">
-        <div class="question-box mb-4">
+        <div class="question-box mb-3">
           <p class="text-sm text-primary">目前的題目：</p>
           <h3 v-if="questionText" class="mt-1">{{ questionText }}</h3>
           <h3 v-else class="mt-1 italic text-gray-500">請聽主持人發問...</h3>
         </div>
         
-        <div v-if="!roomData?.skipAnswering" class="input-section mt-4">
+        <div v-if="!roomData?.skipAnswering" class="input-section mt-3">
           <label class="text-sm font-semibold mb-1 block">你的答案</label>
           <input 
             type="text" 
@@ -172,6 +172,10 @@ const submitAnswer = async () => {
 </script>
 
 <style scoped>
+.participant-page {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
 .header-section { display: flex; justify-content: space-between; align-items: center; }
 .room-label { font-size: 0.75rem; font-weight: 600; color: var(--primary-color); text-transform: uppercase; margin-bottom: 0.25rem; }
 .user-badge { padding: 0.5rem 1rem; border-radius: 999px; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
@@ -184,7 +188,8 @@ const submitAnswer = async () => {
   70% { transform: scale(1.1); opacity: 0.3; box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); }
   100% { transform: scale(0.8); opacity: 0.8; box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
 }
-.question-box { padding: 1.5rem; background-color: var(--accent-color); border-radius: var(--border-radius); }
+.question-box { padding: 1.25rem; background-color: var(--accent-color); border-radius: var(--border-radius); }
+.question-box h3 { margin-bottom: 0; }
 .text-primary { color: var(--primary-color); font-weight: 600; }
 .full-width { width: 100%; }
 .btn-success { background-color: #10b981 !important; }

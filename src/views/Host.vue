@@ -314,7 +314,7 @@ const resetRoom = async () => { await clearAnswers(); await updateRoomState({ st
 .flex-gap { display: flex; gap: 1rem; }
 .flex-1 { flex: 1; }
 
-.header-section { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; }
+.header-section { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1rem; }
 .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem; }
 
 .control-toolbar { display: flex; align-items: center; gap: 0.75rem; }
@@ -327,8 +327,8 @@ const resetRoom = async () => { await clearAnswers(); await updateRoomState({ st
 .btn-setup-premium { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.2rem; font-weight: 800; font-size: 0.9rem; color: white; background: linear-gradient(135deg, var(--primary-color) 0%, #4f46e5 100%); border: none; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
 
 .room-label { font-size: 0.75rem; font-weight: 800; color: var(--primary-color); text-transform: uppercase; margin-bottom: 0.25rem; }
-.active-question-card { padding: 3rem; border-radius: 32px; background: rgba(255, 255, 255, 0.85); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.5); backdrop-filter: blur(20px); }
-.question-display h1 { font-size: 3.5rem; font-weight: 900; margin: 1.5rem 0; line-height: 1.1; color: #1e293b; }
+.active-question-card { padding: 2rem; border-radius: 32px; background: rgba(255, 255, 255, 0.85); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.5); backdrop-filter: blur(20px); }
+.question-display h1 { font-size: 2.8rem; font-weight: 900; margin: 1rem 0; line-height: 1.1; color: #1e293b; }
 .status-tag { font-size: 0.75rem; padding: 0.4rem 1.2rem; border-radius: 999px; font-weight: 800; color: white; text-transform: uppercase; }
 .status-tag.collecting { background: #10b981; }
 .status-tag.revealed { background: var(--primary-color); }

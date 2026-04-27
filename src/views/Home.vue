@@ -115,13 +115,13 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 1.5rem;
   background: radial-gradient(circle at top right, #eef2ff 0%, #f8fafc 50%);
 }
 
 .hero-section {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .logo-circle {
