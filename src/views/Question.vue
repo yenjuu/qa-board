@@ -1,5 +1,5 @@
 <template>
-  <div class="container mt-4 fade-in">
+  <div class="container question-page fade-in">
     <div class="header-section mb-4">
       <div class="flex-between">
         <div class="header-title">
@@ -58,8 +58,13 @@ const handleRemoveQuestion = (index) => {
 </script>
 
 <style scoped>
+.question-page {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
 .header-section {
-  padding: 2rem;
+  padding: 1.5rem 2rem;
   background: rgba(255, 255, 255, 0.7);
   border-radius: 24px;
   backdrop-filter: blur(10px);
@@ -106,7 +111,11 @@ const handleRemoveQuestion = (index) => {
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 2rem;
-  min-height: 500px;
+  min-height: 400px;
+}
+
+:deep(.card) {
+  padding: 1.75rem;
 }
 
 .flex-between {
