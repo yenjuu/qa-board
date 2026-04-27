@@ -31,8 +31,57 @@
           </div>
         </div>
       </div>
+
+      <div class="section-divider my-4"></div>
+
+      <div class="section-title"><span class="num">2</span><h4>顯示方式設定</h4></div>
+      <div class="display-mode-grid mb-3">
+        <div 
+          class="mode-option" 
+          :class="{ 'active': tempDisplayMode === 'manual' }"
+          @click="tempDisplayMode = 'manual'"
+        >
+          <div class="mode-icon">✋</div>
+          <div class="mode-info">
+            <div class="mode-name">手動顯示</div>
+            <div class="mode-desc">主持人手動切換</div>
+          </div>
+        </div>
+        <div 
+          class="mode-option" 
+          :class="{ 'active': tempDisplayMode === 'auto' }"
+          @click="tempDisplayMode = 'auto'"
+        >
+          <div class="mode-icon">⏱️</div>
+          <div class="mode-info">
+            <div class="mode-name">自動播放</div>
+            <div class="mode-desc">倒數後自動跳題</div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="tempDisplayMode === 'auto'" class="auto-config-box fade-in">
+        <div class="flex-between mb-2">
+          <label class="config-label">每題停留時間</label>
+          <span class="value-badge">{{ tempAutoSeconds }} 秒</span>
+        </div>
+        <input type="range" v-model="tempAutoSeconds" min="3" max="60" step="1" class="premium-range mb-3">
+        
+        <label class="checkbox-wrapper mb-2">
+          <input type="checkbox" v-model="tempSkipAnswering">
+          <span class="checkmark"></span>
+          僅顯示題目 (不需回答)
+        </label>
+        
+        <label class="checkbox-wrapper">
+          <input type="checkbox" v-model="tempRandomOrder">
+          <span class="checkmark"></span>
+          隨機出題 (打亂順序)
+        </label>
+      </div>
+
       <div class="mt-4">
-        <button @click="handleConfirmBank" class="btn-primary full-width" :disabled="!tempSelectedSetId">確認使用此題庫</button>
+        <button @click="handleConfirmBank" class="btn-primary full-width" :disabled="!tempSelectedSetId">確認並開始出題</button>
       </div>
     </div>
 
@@ -53,7 +102,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import BaseModal from '../base/BaseModal.vue'
 
 const props = defineProps({
@@ -68,10 +117,22 @@ const tempSelectedSetId = ref(props.initialData?.selectedSetId || '')
 const tempQuestionMode = ref(props.initialData?.questionMode || 'oral')
 const tempQuestionText = ref(props.initialData?.questionText || '')
 
+// New settings
+const tempDisplayMode = ref(props.initialData?.displayMode || 'manual')
+const tempAutoSeconds = ref(props.initialData?.autoSeconds || 10)
+const tempSkipAnswering = ref(props.initialData?.skipAnswering || false)
+const tempRandomOrder = ref(props.initialData?.randomOrder || false)
+
 const tempSelectedSet = computed(() => props.allQuestionSets.find(s => s.id === tempSelectedSetId.value))
 
 const handleConfirmBank = () => {
-  emit('confirm-bank', tempSelectedSetId.value)
+  emit('confirm-bank', {
+    setId: tempSelectedSetId.value,
+    displayMode: tempDisplayMode.value,
+    autoSeconds: parseInt(tempAutoSeconds.value),
+    skipAnswering: tempSkipAnswering.value,
+    randomOrder: tempRandomOrder.value
+  })
 }
 
 const handleConfirmManual = () => {
@@ -96,8 +157,29 @@ const handleConfirmManual = () => {
 .section-title h4 { margin: 0; font-size: 1rem; font-weight: 800; }
 .num { width: 24px; height: 24px; background: var(--primary-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 900; }
 
+.section-divider { height: 1px; background: #e2e8f0; margin: 1.5rem 0; }
+.display-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.mode-option { 
+  padding: 1rem; border: 2px solid #e2e8f0; border-radius: 16px; 
+  cursor: pointer; transition: all 0.2s; display: flex; gap: 0.75rem; align-items: center;
+  background: white;
+}
+.mode-option.active { border-color: var(--primary-color); background: var(--accent-color); }
+.mode-icon { font-size: 1.5rem; }
+.mode-name { font-weight: 800; color: #1e293b; font-size: 0.9rem; }
+.mode-desc { font-size: 0.7rem; color: #64748b; }
+
+.auto-config-box { background: white; padding: 1rem; border-radius: 16px; border: 1px solid #e2e8f0; margin-top: 0.5rem; }
+.config-label { font-size: 0.85rem; font-weight: 700; color: #64748b; }
+.value-badge { background: var(--primary-color); color: white; padding: 0.2rem 0.6rem; border-radius: 8px; font-size: 0.8rem; font-weight: 800; }
+
+.premium-range { width: 100%; height: 6px; border-radius: 3px; accent-color: var(--primary-color); cursor: pointer; }
+
+.checkbox-wrapper { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 700; color: #475569; cursor: pointer; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+
 .premium-select { width: 100%; padding: 1rem; border-radius: 14px; border: 2px solid #e2e8f0; font-weight: 700; font-size: 1rem; cursor: pointer; }
-.preview-area { background: white; border-radius: 16px; border: 1px solid #e2e8f0; max-height: 200px; overflow-y: auto; padding: 0.5rem; }
+.preview-area { background: white; border-radius: 16px; border: 1px solid #e2e8f0; max-height: 150px; overflow-y: auto; padding: 0.5rem; }
 .bank-item-premium { display: flex; gap: 0.75rem; padding: 0.75rem; border-bottom: 1px solid #f1f5f9; }
 .q-index { font-weight: 800; color: var(--primary-color); }
 .q-text { font-weight: 500; color: #1e293b; }

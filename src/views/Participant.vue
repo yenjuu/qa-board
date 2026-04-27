@@ -29,7 +29,7 @@
           <h3 v-else class="mt-1 italic text-gray-500">請聽主持人發問...</h3>
         </div>
         
-        <div class="input-section mt-4">
+        <div v-if="!roomData?.skipAnswering" class="input-section mt-4">
           <label class="text-sm font-semibold mb-1 block">你的答案</label>
           <input 
             type="text" 
@@ -53,18 +53,29 @@
             <span class="icon">✓</span> 答案已送出，主持人翻牌前皆可修改。
           </div>
         </div>
+        <div v-else class="slideshow-view-mode text-center py-4 glass fade-in">
+          <div class="view-icon">🎞️</div>
+          <p class="font-bold">自動播放模式中</p>
+          <p class="text-sm text-gray-500">此場次僅供觀看題目，不需回答</p>
+        </div>
       </div>
       
       <!-- 翻牌中 -->
       <div v-else-if="status === 'revealed'" class="card text-center">
         <div class="reveal-icon">🎴</div>
-        <h3>翻牌揭曉中！</h3>
-        <p class="text-gray-500">請看主持人螢幕，看看大家的驚喜答案。</p>
-        
-        <div v-if="answer" class="my-answer mt-4">
-          <p class="text-sm text-gray-500">你剛才的答案：</p>
-          <p class="font-bold text-lg">{{ answer }}</p>
-        </div>
+        <template v-if="!roomData?.skipAnswering">
+          <h3>翻牌揭曉中！</h3>
+          <p class="text-gray-500">請看主持人螢幕，看看大家的驚喜答案。</p>
+          
+          <div v-if="answer" class="my-answer mt-4">
+            <p class="text-sm text-gray-500">你剛才的答案：</p>
+            <p class="font-bold text-lg">{{ answer }}</p>
+          </div>
+        </template>
+        <template v-else>
+          <h3>準備進入下一題</h3>
+          <p class="text-gray-500">請稍候...</p>
+        </template>
       </div>
     </div>
   </div>
@@ -183,4 +194,6 @@ const submitAnswer = async () => {
 .font-bold { font-weight: 700; }
 .text-lg { font-size: 1.25rem; }
 .italic { font-style: italic; }
+.slideshow-view-mode { border-radius: 16px; background: rgba(255, 255, 255, 0.4); }
+.view-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
 </style>

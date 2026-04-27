@@ -24,19 +24,22 @@
       </div>
     </div>
 
-    <!-- 主顯示區 -->
+  <!-- 主顯示區 -->
     <div class="display-panel fade-in">
       <div class="active-question-card glass mb-4">
         <div class="flex-between mb-3 status-header">
           <div class="status-info">
             <span class="status-tag" :class="isCollecting ? 'collecting' : isRevealed ? 'revealed' : 'waiting'">
-              {{ isCollecting ? '回答中' : isRevealed ? '已翻牌' : '準備中' }}
+              {{ roomData?.skipAnswering && isRevealed ? '播放中' : isCollecting ? '回答中' : isRevealed ? '已翻牌' : '準備中' }}
             </span>
             <span class="mode-badge" v-if="roomData?.selectedSetId">
               📚 {{ currentSet?.name }} ({{ (roomData?.currentQuestionIndex || 0) + 1 }} / {{ currentSet?.questions.length }})
             </span>
             <span class="mode-badge manual" v-else>
               🎤 即興模式
+            </span>
+            <span class="countdown-badge" v-if="autoTimer && countdown > 0">
+              ⏱️ {{ countdown }}s 後下一題
             </span>
           </div>
         </div>
@@ -78,7 +81,7 @@
         </div>
       </div>
 
-      <div class="panel-header glass mb-3">
+      <div v-if="!roomData?.skipAnswering" class="panel-header glass mb-3">
         <div class="status-row">
           <div class="status-title">
             <h3>回答狀況 <span class="count">({{ answers.length }} / {{ participants.length }})</span></h3>
@@ -93,7 +96,7 @@
         </div>
       </div>
       
-      <div class="cards-grid">
+      <div v-if="!roomData?.skipAnswering" class="cards-grid">
         <AnswerCard 
           v-for="ans in sortedAnswers" 
           :key="ans.nickname" 
@@ -108,6 +111,11 @@
             <p v-else-if="!isRevealed" class="fade-in">點擊上方按鈕開始場次</p>
           </div>
         </div>
+      </div>
+      <div v-else class="slideshow-hint text-center py-5 glass fade-in">
+        <div class="hint-icon">📽️</div>
+        <h3>自動播放模式中</h3>
+        <p>目前設為僅顯示題目，不收集回答</p>
       </div>
     </div>
 
@@ -132,7 +140,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { collection, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useRoom } from '../composables/useRoom'
@@ -168,10 +176,66 @@ const showQRModal = ref(false)
 const allQuestionSets = ref([])
 
 const currentSet = computed(() => allQuestionSets.value.find(s => s.id === roomData.value?.selectedSetId))
-const hasNextQuestion = computed(() => currentSet.value && (roomData.value?.currentQuestionIndex ?? -1) < currentSet.value.questions.length - 1)
+const activeQuestions = computed(() => roomData.value?.activeQuestions || currentSet.value?.questions || [])
+const hasNextQuestion = computed(() => activeQuestions.value.length > 0 && (roomData.value?.currentQuestionIndex ?? -1) < activeQuestions.value.length - 1)
 
 const sortedAnswers = computed(() => [...answers.value].sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)))
 const hasAnswered = (nickname) => answers.value.some(a => a.nickname === nickname)
+
+// Auto Play Logic
+const autoTimer = ref(null)
+const countdown = ref(0)
+
+const startAutoFlow = () => {
+  stopAutoFlow()
+  if (roomData.value?.displayMode !== 'auto') return
+  countdown.value = roomData.value.autoSeconds || 10
+  runTimer()
+}
+
+const resumeAutoFlow = () => {
+  stopAutoFlow()
+  if (roomData.value?.displayMode !== 'auto') return
+  if (countdown.value <= 0) {
+    countdown.value = roomData.value.autoSeconds || 10
+  }
+  runTimer()
+}
+
+const runTimer = () => {
+  autoTimer.value = setInterval(async () => {
+    const status = roomData.value?.status
+    const skip = roomData.value?.skipAnswering
+    if (status === 'collecting' || (status === 'revealed' && skip)) {
+      countdown.value--
+      if (countdown.value <= 0) {
+        if (hasNextQuestion.value) {
+          await goNextQuestion()
+          countdown.value = roomData.value.autoSeconds || 10
+        } else {
+          stopAutoFlow()
+        }
+      }
+    }
+  }, 1000)
+}
+
+const stopAutoFlow = () => {
+  if (autoTimer.value) {
+    clearInterval(autoTimer.value)
+    autoTimer.value = null
+  }
+}
+
+watch(() => roomData.value?.displayMode, (newMode) => {
+  if (newMode === 'auto') startAutoFlow()
+  else stopAutoFlow()
+})
+
+watch(showBankModal, (isOpen) => {
+  if (isOpen) stopAutoFlow()
+  else if (roomData.value?.displayMode === 'auto') resumeAutoFlow()
+})
 
 onMounted(() => {
   onSnapshot(collection(db, 'questionSets'), (snapshot) => {
@@ -179,23 +243,41 @@ onMounted(() => {
   })
 })
 
-const confirmBankMode = async (setId) => {
+onUnmounted(() => stopAutoFlow())
+
+const confirmBankMode = async ({ setId, displayMode, autoSeconds, skipAnswering, randomOrder }) => {
+  const selectedSet = allQuestionSets.value.find(s => s.id === setId)
+  let questions = [...(selectedSet?.questions || [])]
+  
+  if (randomOrder) {
+    questions = questions.sort(() => Math.random() - 0.5)
+  }
+
   await updateRoomState({ 
     selectedSetId: setId, 
+    displayMode,
+    autoSeconds,
+    skipAnswering,
+    randomOrder,
+    activeQuestions: questions,
     currentQuestionIndex: -1, 
     status: 'waiting', 
     questionText: '', 
     questionMode: 'written' 
   })
   showBankModal.value = false
+  if (displayMode === 'auto') startAutoFlow()
 }
 
 const confirmManualMode = async ({ mode, text }) => {
+  stopAutoFlow()
   await clearAnswers()
   await updateRoomState({ 
     status: 'collecting', 
     selectedSetId: '', 
     currentQuestionIndex: -1, 
+    displayMode: 'manual',
+    activeQuestions: null,
     questionMode: mode, 
     questionText: mode === 'written' ? text : '' 
   })
@@ -203,12 +285,23 @@ const confirmManualMode = async ({ mode, text }) => {
 }
 
 const goNextQuestion = async () => {
-  if (!currentSet.value) return
+  const questions = activeQuestions.value
+  if (questions.length === 0) return
+  
   await clearAnswers()
   const nextIndex = (roomData.value?.currentQuestionIndex ?? -1) + 1
-  if (nextIndex < currentSet.value.questions.length) {
-    const nextText = currentSet.value.questions[nextIndex]
-    await updateRoomState({ status: 'collecting', questionMode: 'written', questionText: nextText, currentQuestionIndex: nextIndex })
+  if (nextIndex < questions.length) {
+    const nextText = questions[nextIndex]
+    const status = roomData.value?.skipAnswering ? 'revealed' : 'collecting'
+    await updateRoomState({ 
+      status, 
+      questionMode: 'written', 
+      questionText: nextText, 
+      currentQuestionIndex: nextIndex 
+    })
+    if (roomData.value?.displayMode === 'auto') {
+      countdown.value = roomData.value.autoSeconds || 10
+    }
   }
 }
 
@@ -289,4 +382,10 @@ const resetRoom = async () => { await clearAnswers(); await updateRoomState({ st
 .btn-primary { background: var(--primary-color); color: white; border: none; border-radius: 14px; font-weight: 800; cursor: pointer; }
 .btn-danger { background: #ef4444; color: white; border: none; }
 .btn-success { background: #10b981; color: white; border: none; }
+
+.countdown-badge { font-size: 0.8rem; font-weight: 800; color: #ef4444; background: #fee2e2; padding: 0.4rem 1.2rem; border-radius: 999px; margin-left: 0.5rem; animation: pulse 1s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+.slideshow-hint { border-radius: 24px; color: #64748b; background: rgba(255, 255, 255, 0.4); margin-bottom: 2rem; }
+.hint-icon { font-size: 3rem; margin-bottom: 0.5rem; opacity: 0.5; }
 </style>

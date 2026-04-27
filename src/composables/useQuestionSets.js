@@ -33,11 +33,14 @@ export function useQuestionSets() {
     await deleteDoc(doc(db, 'questionSets', id))
   }
 
-  const addQuestion = async (setId, text) => {
-    if (!text.trim()) return
+  const addQuestion = async (setId, textOrArray) => {
+    const texts = Array.isArray(textOrArray) ? textOrArray : [textOrArray]
+    const filtered = texts.map(t => t.trim()).filter(t => t !== '')
+    if (filtered.length === 0) return
+    
     const setRef = doc(db, 'questionSets', setId)
     await updateDoc(setRef, {
-      questions: arrayUnion(text.trim())
+      questions: arrayUnion(...filtered)
     })
   }
 
