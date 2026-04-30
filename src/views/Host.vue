@@ -103,6 +103,7 @@
           :nickname="ans.nickname" 
           :answer="ans.answer" 
           :is-revealed="isRevealed"
+          :answer-type="roomData?.answerType || 'text'"
         />
         <div v-if="answers.length === 0" class="empty-state-wrapper">
           <div class="empty-state-content glass">
@@ -245,7 +246,7 @@ onMounted(() => {
 
 onUnmounted(() => stopAutoFlow())
 
-const confirmBankMode = async ({ setId, displayMode, autoSeconds, skipAnswering, randomOrder }) => {
+const confirmBankMode = async ({ setId, displayMode, autoSeconds, skipAnswering, randomOrder, answerType }) => {
   const selectedSet = allQuestionSets.value.find(s => s.id === setId)
   let questions = [...(selectedSet?.questions || [])]
   
@@ -259,6 +260,7 @@ const confirmBankMode = async ({ setId, displayMode, autoSeconds, skipAnswering,
     autoSeconds,
     skipAnswering,
     randomOrder,
+    answerType: answerType || 'text',
     activeQuestions: questions,
     currentQuestionIndex: -1, 
     status: 'waiting', 
@@ -269,7 +271,7 @@ const confirmBankMode = async ({ setId, displayMode, autoSeconds, skipAnswering,
   if (displayMode === 'auto') startAutoFlow()
 }
 
-const confirmManualMode = async ({ mode, text }) => {
+const confirmManualMode = async ({ mode, text, answerType }) => {
   stopAutoFlow()
   await clearAnswers()
   await updateRoomState({ 
@@ -278,6 +280,7 @@ const confirmManualMode = async ({ mode, text }) => {
     currentQuestionIndex: -1, 
     displayMode: 'manual',
     activeQuestions: null,
+    answerType: answerType || 'text',
     questionMode: mode, 
     questionText: mode === 'written' ? text : '' 
   })

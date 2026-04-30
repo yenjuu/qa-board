@@ -1,33 +1,67 @@
 <template>
-  <div class="answer-card" :class="{ 'revealed': isRevealed }">
+  <div class="answer-card" :class="{ 'revealed': isRevealed }" @click="handleClick">
     <div class="card-inner">
       <div class="card-front">
         <div class="avatar">{{ nickname.charAt(0) }}</div>
         <span class="nickname">{{ nickname }}</span>
-        <span class="status-badge">已提交</span>
+        <span class="status-badge">{{ answerType === 'drawing' ? '已繪圖' : '已提交' }}</span>
       </div>
       <div class="card-back">
         <span class="nickname-back">{{ nickname }}</span>
         <div class="answer-content">
-          <p class="answer-text">{{ answer }}</p>
+          <img
+            v-if="answerType === 'drawing'"
+            :src="answer"
+            class="answer-img"
+            alt="畫圖答案"
+          />
+          <p v-else class="answer-text">{{ answer }}</p>
         </div>
+        <div v-if="answerType === 'drawing' && isRevealed" class="expand-hint">點擊放大</div>
       </div>
     </div>
   </div>
+
+  <ImageLightbox
+    v-if="showLightbox"
+    :src="answer"
+    :nickname="nickname"
+    @close="showLightbox = false"
+  />
 </template>
 
 <script setup>
-defineProps({
+import { ref } from 'vue'
+import ImageLightbox from './ImageLightbox.vue'
+
+const props = defineProps({
   nickname: String,
   answer: String,
-  isRevealed: Boolean
+  isRevealed: Boolean,
+  answerType: {
+    type: String,
+    default: 'text'
+  }
 })
+
+const showLightbox = ref(false)
+
+const handleClick = () => {
+  if (props.isRevealed && props.answerType === 'drawing' && props.answer) {
+    showLightbox.value = true
+  }
+}
 </script>
 
 <style scoped>
 .answer-card {
   height: 180px;
   perspective: 1000px;
+  cursor: default;
+}
+
+.answer-card.revealed[data-type='drawing'] {
+  cursor: pointer;
 }
 
 .card-inner {
@@ -65,6 +99,7 @@ defineProps({
   background: white;
   transform: rotateY(180deg);
   border: 4px solid var(--primary-color);
+  overflow: hidden;
 }
 
 .avatar {
@@ -112,6 +147,32 @@ defineProps({
   text-align: center;
   color: #1e293b;
   word-break: break-all;
+}
+
+.answer-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 1.5rem;
+}
+
+.answer-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.expand-hint {
+  position: absolute;
+  bottom: 0.6rem;
+  right: 1rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  opacity: 0.6;
 }
 
 @media (max-width: 768px) {

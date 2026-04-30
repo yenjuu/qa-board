@@ -34,7 +34,35 @@
 
       <div class="section-divider my-4"></div>
 
-      <div class="section-title"><span class="num">2</span><h4>顯示方式設定</h4></div>
+      <div class="section-title"><span class="num">2</span><h4>回答類型</h4></div>
+      <div class="display-mode-grid mb-3">
+        <div
+          class="mode-option"
+          :class="{ 'active': tempAnswerType === 'text' }"
+          @click="tempAnswerType = 'text'"
+        >
+          <div class="mode-icon">⌨️</div>
+          <div class="mode-info">
+            <div class="mode-name">文字輸入</div>
+            <div class="mode-desc">參與者用鍵盤回答</div>
+          </div>
+        </div>
+        <div
+          class="mode-option"
+          :class="{ 'active': tempAnswerType === 'drawing' }"
+          @click="tempAnswerType = 'drawing'"
+        >
+          <div class="mode-icon">🖌️</div>
+          <div class="mode-info">
+            <div class="mode-name">手繪回答</div>
+            <div class="mode-desc">參與者用畫的回答</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider my-4"></div>
+
+      <div class="section-title"><span class="num">3</span><h4>顯示方式設定</h4></div>
       <div class="display-mode-grid mb-3">
         <div 
           class="mode-option" 
@@ -86,7 +114,35 @@
     </div>
 
     <div v-else class="setup-card fade-in">
-      <div class="section-title"><span class="num">1</span><h4>即時出題內容</h4></div>
+      <div class="section-title"><span class="num">1</span><h4>回答類型</h4></div>
+      <div class="display-mode-grid mb-3">
+        <div
+          class="mode-option"
+          :class="{ 'active': tempAnswerType === 'text' }"
+          @click="tempAnswerType = 'text'"
+        >
+          <div class="mode-icon">⌨️</div>
+          <div class="mode-info">
+            <div class="mode-name">文字輸入</div>
+            <div class="mode-desc">參與者用鍵盤回答</div>
+          </div>
+        </div>
+        <div
+          class="mode-option"
+          :class="{ 'active': tempAnswerType === 'drawing' }"
+          @click="tempAnswerType = 'drawing'"
+        >
+          <div class="mode-icon">🖌️</div>
+          <div class="mode-info">
+            <div class="mode-name">手繪回答</div>
+            <div class="mode-desc">參與者用畫的回答</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider my-4"></div>
+
+      <div class="section-title"><span class="num">2</span><h4>即時出題內容</h4></div>
       <div class="mode-toggle-group mb-3">
         <button :class="{ 'active': tempQuestionMode === 'oral' }" @click="tempQuestionMode = 'oral'">🎤 口頭</button>
         <button :class="{ 'active': tempQuestionMode === 'written' }" @click="tempQuestionMode = 'written'">✍️ 文字</button>
@@ -122,6 +178,7 @@ const tempDisplayMode = ref(props.initialData?.displayMode || 'manual')
 const tempAutoSeconds = ref(props.initialData?.autoSeconds || 10)
 const tempSkipAnswering = ref(props.initialData?.skipAnswering || false)
 const tempRandomOrder = ref(props.initialData?.randomOrder || false)
+const tempAnswerType = ref(props.initialData?.answerType || 'text')
 
 const tempSelectedSet = computed(() => props.allQuestionSets.find(s => s.id === tempSelectedSetId.value))
 
@@ -131,14 +188,16 @@ const handleConfirmBank = () => {
     displayMode: tempDisplayMode.value,
     autoSeconds: parseInt(tempAutoSeconds.value),
     skipAnswering: tempSkipAnswering.value,
-    randomOrder: tempRandomOrder.value
+    randomOrder: tempRandomOrder.value,
+    answerType: tempAnswerType.value
   })
 }
 
 const handleConfirmManual = () => {
   emit('confirm-manual', {
     mode: tempQuestionMode.value,
-    text: tempQuestionText.value
+    text: tempQuestionText.value,
+    answerType: tempAnswerType.value
   })
 }
 </script>
