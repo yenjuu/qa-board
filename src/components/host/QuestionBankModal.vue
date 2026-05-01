@@ -101,11 +101,26 @@
           僅顯示題目 (不需回答)
         </label>
         
-        <label class="checkbox-wrapper">
+        <label class="checkbox-wrapper mb-2">
           <input type="checkbox" v-model="tempRandomOrder">
           <span class="checkmark"></span>
           隨機出題 (打亂順序)
         </label>
+
+        <div v-if="tempRandomOrder" class="random-count-box fade-in ml-2 mt-2">
+          <div class="flex-between mb-1">
+            <label class="config-label">隨機出題數</label>
+            <span style="color: #64748b; font-size: 0.75rem; font-weight: 700;">(最高 {{ tempSelectedSet?.questions?.length || 0 }} 題)</span>
+          </div>
+          <input 
+            type="number" 
+            v-model="tempRandomCount" 
+            min="1" 
+            :max="tempSelectedSet?.questions?.length || 1" 
+            class="premium-input"
+            placeholder="請輸入抽題數量，留空預設為全抽"
+          >
+        </div>
       </div>
 
       <div class="mt-4">
@@ -178,6 +193,7 @@ const tempDisplayMode = ref(props.initialData?.displayMode || 'manual')
 const tempAutoSeconds = ref(props.initialData?.autoSeconds || 10)
 const tempSkipAnswering = ref(props.initialData?.skipAnswering || false)
 const tempRandomOrder = ref(props.initialData?.randomOrder || false)
+const tempRandomCount = ref(props.initialData?.randomCount || 0)
 const tempAnswerType = ref(props.initialData?.answerType || 'text')
 
 const tempSelectedSet = computed(() => props.allQuestionSets.find(s => s.id === tempSelectedSetId.value))
@@ -189,6 +205,7 @@ const handleConfirmBank = () => {
     autoSeconds: parseInt(tempAutoSeconds.value),
     skipAnswering: tempSkipAnswering.value,
     randomOrder: tempRandomOrder.value,
+    randomCount: parseInt(tempRandomCount.value) || tempSelectedSet.value?.questions?.length || 0,
     answerType: tempAnswerType.value
   })
 }
@@ -248,6 +265,9 @@ const handleConfirmManual = () => {
 .mode-toggle-group button.active { border-color: var(--primary-color); color: var(--primary-color); background: var(--accent-color); }
 
 .premium-textarea { width: 100%; height: 120px; padding: 1rem; border-radius: 16px; border: 2px solid #e2e8f0; font-family: inherit; font-size: 1rem; font-weight: 500; resize: none; margin-top: 0.5rem; }
+
+.premium-input { width: 100%; padding: 0.75rem 1rem; border-radius: 12px; border: 2px solid #e2e8f0; font-weight: 700; font-size: 1rem; margin-top: 0.5rem; transition: all 0.2s; background: #f8fafc; }
+.premium-input:focus { outline: none; border-color: var(--primary-color); background: white; }
 
 .btn-primary { background: var(--primary-color); color: white; border: none; border-radius: 14px; font-weight: 800; cursor: pointer; padding: 1rem; font-size: 1rem; }
 .full-width { width: 100%; }

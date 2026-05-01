@@ -11,6 +11,7 @@
           <div class="join-info-bar glass">
             <span class="url-text">{{ shortJoinUrl }}</span>
             <div class="bar-actions">
+              <button @click="showSummaryModal = true" class="btn-mini-icon" title="檢視出題清單">📋</button>
               <button @click="copyToClipboard" class="btn-mini">{{ copyStatus }}</button>
               <button @click="showQRModal = true" class="btn-mini-icon" title="顯示 QR Code">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><line x1="7" y1="7" x2="7.01" y2="7"></line><line x1="17" y1="7" x2="17.01" y2="7"></line><line x1="17" y1="17" x2="17.01" y2="17"></line><line x1="7" y1="17" x2="7.01" y2="17"></line></svg>
@@ -33,7 +34,7 @@
               {{ roomData?.skipAnswering && isRevealed ? '播放中' : isCollecting ? '回答中' : isRevealed ? '已翻牌' : '準備中' }}
             </span>
             <span class="mode-badge" v-if="roomData?.selectedSetId">
-              📚 {{ currentSet?.name }} ({{ (roomData?.currentQuestionIndex || 0) + 1 }} / {{ currentSet?.questions.length }})
+              📚 {{ currentSet?.name }} ({{ (roomData?.currentQuestionIndex || 0) + 1 }} / {{ roomData?.activeQuestions?.length || currentSet?.questions.length }})
             </span>
             <span class="mode-badge manual" v-else>
               🎤 即興模式
@@ -60,7 +61,10 @@
             </div>
             <div v-else-if="isRevealed" class="flex-gap">
               <button @click="goNextQuestion" class="btn-primary btn-lg flex-1 shadow-primary" v-if="hasNextQuestion">
-                下一題 ({{ (roomData.currentQuestionIndex || 0) + 2 }} / {{ currentSet?.questions.length }})
+                下一題 ({{ (roomData.currentQuestionIndex || 0) + 2 }} / {{ roomData?.activeQuestions?.length || currentSet?.questions.length }})
+              </button>
+              <button @click="showSummaryModal = true" class="btn-primary btn-lg flex-1 shadow-primary" v-else>
+                🎉 檢視出題清單
               </button>
               <button @click="resetRoom" class="btn-success btn-lg flex-1 shadow-success">🔄 重新開始本題</button>
             </div>
@@ -137,6 +141,27 @@
       @confirm-bank="confirmBankMode"
       @confirm-manual="confirmManualMode"
     />
+
+    <!-- 總結彈窗 -->
+    <BaseModal
+      v-if="showSummaryModal"
+      title="本回合出題清單"
+      @close="showSummaryModal = false"
+    >
+      <div class="p-4" style="max-height: 60vh; overflow-y: auto;">
+        <h3 style="margin-bottom: 1rem; font-size: 1.2rem; font-weight: 800; text-align: center; color: #1e293b;">🎉 本回合已出過的題目</h3>
+        <div v-for="(q, index) in askedQuestionsList" :key="index" style="padding: 0.75rem 1rem; margin-bottom: 0.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; display: flex; gap: 0.75rem;">
+          <span style="font-weight: 800; color: var(--primary-color);">{{ index + 1 }}.</span>
+          <span style="color: #1e293b; font-weight: 500;">{{ q }}</span>
+        </div>
+        <div v-if="askedQuestionsList.length === 0" style="text-align: center; color: #64748b; padding: 2rem 0; font-weight: 700;">
+          目前尚未出過任何題目
+        </div>
+      </div>
+      <div style="padding: 1rem; padding-top: 0;">
+        <button @click="showSummaryModal = false" class="btn-primary full-width" style="padding: 1rem; border-radius: 14px;">關閉</button>
+      </div>
+    </BaseModal>
   </div>
 </template>
 
@@ -148,6 +173,7 @@ import { useRoom } from '../composables/useRoom'
 import AnswerCard from '../components/host/AnswerCard.vue'
 import QRModal from '../components/host/QRModal.vue'
 import QuestionBankModal from '../components/host/QuestionBankModal.vue'
+import BaseModal from '../components/base/BaseModal.vue'
 
 const props = defineProps(['roomId'])
 
@@ -173,12 +199,25 @@ const isCollecting = computed(() => roomData.value?.status === 'collecting')
 const isRevealed = computed(() => roomData.value?.status === 'revealed')
 const showBankModal = ref(false)
 const showQRModal = ref(false)
+const showSummaryModal = ref(false)
 
 const allQuestionSets = ref([])
 
 const currentSet = computed(() => allQuestionSets.value.find(s => s.id === roomData.value?.selectedSetId))
 const activeQuestions = computed(() => roomData.value?.activeQuestions || currentSet.value?.questions || [])
 const hasNextQuestion = computed(() => activeQuestions.value.length > 0 && (roomData.value?.currentQuestionIndex ?? -1) < activeQuestions.value.length - 1)
+
+const askedQuestionsList = computed(() => {
+  if (roomData.value?.selectedSetId) {
+    const idx = roomData.value?.currentQuestionIndex ?? -1
+    if (idx >= 0 && activeQuestions.value) {
+      return activeQuestions.value.slice(0, idx + 1)
+    }
+    return []
+  } else {
+    return roomData.value?.questionHistory || []
+  }
+})
 
 const sortedAnswers = computed(() => [...answers.value].sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)))
 const hasAnswered = (nickname) => answers.value.some(a => a.nickname === nickname)
@@ -246,12 +285,15 @@ onMounted(() => {
 
 onUnmounted(() => stopAutoFlow())
 
-const confirmBankMode = async ({ setId, displayMode, autoSeconds, skipAnswering, randomOrder, answerType }) => {
+const confirmBankMode = async ({ setId, displayMode, autoSeconds, skipAnswering, randomOrder, randomCount, answerType }) => {
   const selectedSet = allQuestionSets.value.find(s => s.id === setId)
   let questions = [...(selectedSet?.questions || [])]
   
   if (randomOrder) {
     questions = questions.sort(() => Math.random() - 0.5)
+    if (randomCount > 0) {
+      questions = questions.slice(0, randomCount)
+    }
   }
 
   await updateRoomState({ 
@@ -260,12 +302,14 @@ const confirmBankMode = async ({ setId, displayMode, autoSeconds, skipAnswering,
     autoSeconds,
     skipAnswering,
     randomOrder,
+    randomCount,
     answerType: answerType || 'text',
     activeQuestions: questions,
     currentQuestionIndex: -1, 
     status: 'waiting', 
     questionText: '', 
-    questionMode: 'written' 
+    questionMode: 'written',
+    questionHistory: []
   })
   showBankModal.value = false
   if (displayMode === 'auto') startAutoFlow()
@@ -274,6 +318,8 @@ const confirmBankMode = async ({ setId, displayMode, autoSeconds, skipAnswering,
 const confirmManualMode = async ({ mode, text, answerType }) => {
   stopAutoFlow()
   await clearAnswers()
+  const history = roomData.value?.questionHistory || []
+  const entry = mode === 'written' ? text : '(🎤 口頭提問)'
   await updateRoomState({ 
     status: 'collecting', 
     selectedSetId: '', 
@@ -282,7 +328,8 @@ const confirmManualMode = async ({ mode, text, answerType }) => {
     activeQuestions: null,
     answerType: answerType || 'text',
     questionMode: mode, 
-    questionText: mode === 'written' ? text : '' 
+    questionText: mode === 'written' ? text : '',
+    questionHistory: [...history, entry]
   })
   showBankModal.value = false
 }
